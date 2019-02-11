@@ -6,10 +6,12 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -17,6 +19,7 @@ import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.ImageView;
 
+import com.example.myapplication.components.UploadFileToServerTask;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
@@ -42,11 +45,8 @@ import java.util.concurrent.ExecutionException;
 public class MainActivity extends Activity implements OnClickListener {
     public static final String ADD_SERVER_FOR_UPLOAD = "http://arxemond.ru/server_for_android/receive_an_img.php";
     static final int REQUEST_CAMERA = 1;
-
     private Button mTakePhoto;
-    private WebView mWebView;
-
-    private String TAG;
+    private final static String  TAG = ":( >>>>>";
 
 
     @Override
@@ -63,11 +63,17 @@ public class MainActivity extends Activity implements OnClickListener {
     // invoke the camera
     @Override
     public void onClick(View v) {
-//        String[] permissions = {"android.permission.WRITE_EXTERNAL_STORAGE"};
-//        requestPermissions(permissions, REQUEST_CAMERA);
 
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        startActivityForResult(intent, REQUEST_CAMERA);
+        if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+
+            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            startActivityForResult(intent, REQUEST_CAMERA);
+        } else { // get the WRITE_EXTERNAL_STORAGE permition at first time
+            String[] permissions = {"android.permission.WRITE_EXTERNAL_STORAGE"};
+            requestPermissions(permissions, REQUEST_CAMERA);
+        }
+
+
     }
 
     private static final String PIC_NAME = "temp.jpg";
@@ -89,6 +95,7 @@ public class MainActivity extends Activity implements OnClickListener {
             picNameHash = UUID.randomUUID() + PIC_NAME;
             System.out.println(">>>>>>>>>new val " + picNameHash);
             System.out.println(">>>>>>>>>new val  fullPathToPic" + getFullPathToPic());
+            System.out.println(">>>>>>>>>Environment.getExternalStorageDirectory()" + Environment.getExternalStorageDirectory());
             File destination = new File(Environment.getExternalStorageDirectory(), picNameHash);
             FileOutputStream fo;
             try {
@@ -96,6 +103,7 @@ public class MainActivity extends Activity implements OnClickListener {
                 fo.write(bytes.toByteArray());
                 fo.close();
             } catch (IOException e) {
+                Log.e(TAG, e.getMessage());
                 e.printStackTrace();
             }
 
@@ -107,7 +115,11 @@ public class MainActivity extends Activity implements OnClickListener {
                 System.out.println("+++++++");
                 System.out.println(o);
 
-                printResult((String) o);
+                if (!o.toString().equals("false"))
+                    printResult((String) o);
+                else {
+                    Log.e(TAG, "something went wrong");
+                }
 
             } catch (ExecutionException e) {
                 e.printStackTrace();
@@ -117,96 +129,7 @@ public class MainActivity extends Activity implements OnClickListener {
         }
     }
 
-    /**
-     * Upload the fetch img from a camera to a server
-     */
-    private class UploadFileToServerTask extends AsyncTask<String, String, Object> {
-        private final static String TAG = "img/";
 
-        @Override
-        protected String doInBackground(String... args) {
-            try {
-                String lineEnd = "\r\n";
-                String twoHyphens = "--";
-                String boundary = "*****";
-                int bytesRead, bytesAvailable, bufferSize;
-                byte[] buffer;
-                @SuppressWarnings("PointlessArithmeticExpression")
-                int maxBufferSize = 1 * 1024 * 1024;
-
-
-                java.net.URL url = new URL(ADD_SERVER_FOR_UPLOAD);
-                Log.d(TAG, "url " + url);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
-                // Allow Inputs &amp; Outputs.
-                connection.setDoInput(true);
-                connection.setDoOutput(true);
-                connection.setUseCaches(false);
-
-                // Set HTTP method to POST.
-                connection.setRequestMethod("POST");
-
-                connection.setRequestProperty("Connection", "Keep-Alive");
-                connection.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
-
-                FileInputStream fileInputStream;
-                DataOutputStream outputStream;
-                {
-                    outputStream = new DataOutputStream(connection.getOutputStream());
-
-                    outputStream.writeBytes(twoHyphens + boundary + lineEnd);
-                    String filename = args[0];
-                    outputStream.writeBytes("Content-Disposition: form-data; name=\"image\";filename=\"" + filename + "\"" + lineEnd);
-                    outputStream.writeBytes(lineEnd);
-                    Log.d(TAG, "filename " + filename);
-
-                    fileInputStream = new FileInputStream(filename);
-
-                    bytesAvailable = fileInputStream.available();
-                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
-
-                    buffer = new byte[bufferSize];
-
-                    // Read file
-                    bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-
-                    while (bytesRead > 0) {
-                        outputStream.write(buffer, 0, bufferSize);
-                        bytesAvailable = fileInputStream.available();
-                        bufferSize = Math.min(bytesAvailable, maxBufferSize);
-                        bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-                    }
-                    outputStream.writeBytes(lineEnd);
-                    outputStream.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
-                }
-
-                int serverResponseCode = connection.getResponseCode();
-                String serverResponseMessage = connection.getResponseMessage();
-                Log.d("serverResponseCode", "" + serverResponseCode);
-                Log.d("serverResponseMessage", "" + serverResponseMessage);
-
-                fileInputStream.close();
-                outputStream.flush();
-                outputStream.close();
-
-
-                if (serverResponseCode >= 200 && serverResponseCode <= 299) {
-
-
-                    return printResultFromTheServer(connection);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return "false";
-        }
-
-        @Override
-        protected void onPostExecute(Object result) {
-
-        }
-    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -217,32 +140,7 @@ public class MainActivity extends Activity implements OnClickListener {
         }
     }
 
-    private String printResultFromTheServer(HttpURLConnection connection) throws IOException, JSONException {
-        // response body
-        BufferedReader br;
-        if (200 <= connection.getResponseCode() && connection.getResponseCode() <= 299) {
-            br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        } else {
-            br = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
-        }
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = br.readLine()) != null) {
-            sb.append(line);
-        }
-        JSONObject json = new JSONObject(sb.toString());
 
-        if (json.get("status").equals("success")) {
-
-//            printResult(json.get("result").toString());
-            return (String) json.get("result");
-
-        } else {
-            System.err.println("FAAAACCCK");
-            System.err.println(json.get("status"));
-            throw new Error("FAAAACCCK");
-        }
-    }
 
     private void printResult(String urls) {
         ImageView ivBasicImage1 = findViewById(R.id.image_view_1);
