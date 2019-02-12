@@ -2,5 +2,10 @@
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">arxemond.ru</domain>
+        <domain includeSubdomains="true">ml-dev-env</domain>
+        <domain includeSubdomains="true">172.27.43.17</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">cache3.youla.io</domain>
+        <domain includeSubdomains="true">youla.io</domain>
     </domain-config>
 </network-security-config>

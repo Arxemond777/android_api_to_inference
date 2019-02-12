@@ -12,3 +12,6 @@
 /captures
 .externalNativeBuild
 .idea
+
+# hide this file intended for confidentional data
+app/src/main/java/com/example/myapplication/config/Config.java

@@ -1,23 +1,27 @@
-package com.example.myapplication.components;
+package com.example.myapplication.components.internet;
 
 import android.os.AsyncTask;
 import android.util.Log;
+
+import com.example.myapplication.components.internet.http.ParseDataFromResponse;
 
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import static com.example.myapplication.MainActivity.ADD_SERVER_FOR_UPLOAD;
+import static com.example.myapplication.config.Config.ADD_SERVER_FOR_UPLOAD;
+
 
 /**
  * Upload the fetch img from a camera to a server
  */
 public class UploadFileToServerTask extends AsyncTask<String, String, Object> {
     private final static String TAG = "img/";
-
     @Override
     protected String doInBackground(String... args) {
+
+        Log.d(TAG, "start >> ");
         try {
             String lineEnd = "\r\n";
             String twoHyphens = "--";
@@ -29,7 +33,7 @@ public class UploadFileToServerTask extends AsyncTask<String, String, Object> {
 
 
             java.net.URL url = new URL(ADD_SERVER_FOR_UPLOAD);
-            Log.d(TAG, "url " + url);
+            Log.d(TAG, "url >> " + url);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
             // Allow Inputs &amp; Outputs.
@@ -87,7 +91,7 @@ public class UploadFileToServerTask extends AsyncTask<String, String, Object> {
             if (serverResponseCode >= 200 && serverResponseCode <= 299) {
 
 
-                return new VisualizationDataFromResponse(connection).printResultFromTheServer();
+                return new ParseDataFromResponse(connection).printResultFromTheServer();
             }
         } catch (Exception e) {
             e.printStackTrace();
