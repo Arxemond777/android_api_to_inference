@@ -1,4 +1,6 @@
-package com.example.myapplication.components;
+package com.example.myapplication.components.internet.http;
+
+import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -8,9 +10,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 
-public class VisualizationDataFromResponse {
+import static com.example.myapplication.MainActivity.TAG;
+
+public class ParseDataFromResponse {
     private final HttpURLConnection connection;
-    public VisualizationDataFromResponse(HttpURLConnection connection) {
+    public ParseDataFromResponse(HttpURLConnection connection) {
 
         this.connection = connection;
     }
@@ -32,11 +36,10 @@ public class VisualizationDataFromResponse {
 
         if (json.get("status").equals("success")) {
 
-//            printResult(json.get("result").toString());
-            return (String) json.get("result");
+            return json.get("result").toString();
 
         } else {
-            System.err.println(json.get("status"));
+            Log.e(TAG, json.get("status").toString());
             throw new Error("There is not status");
         }
     }
